@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuppino Label Printer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏷️ Cuppino Label Printer</h1>
+            <p>Swedish Compliance Labels for Zebra GK420d</p>
+            <a href="/config" class="config-link">⚙️ Printer Configuration</a>
+        </header>
+
+        <main>
+            <div class="card">
+                <h2>Print Product Label</h2>
+
+                <form id="labelForm">
+                    <div class="form-group">
+                        <label for="productCategory">Product Category</label>
+                        <select id="productCategory" required>
+                            <option value="">Select category...</option>
+                            <option value="honey">Honey (Honung)</option>
+                            <option value="olive">Olive Pates (Olivkräm)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="productSelectGroup" style="display: none;">
+                        <label for="productSKU">Product</label>
+                        <select id="productSKU" required disabled>
+                            <option value="">Select product...</option>
+                        </select>
+                    </div>
+
+                    <div id="productInfo" class="product-info" style="display: none;">
+                        <div class="info-badge" id="labelTypeBadge"></div>
+                        <p><strong>Product:</strong> <span id="infoName"></span></p>
+                        <p><strong>Weight:</strong> <span id="infoWeight"></span></p>
+                        <p><strong>Label Type:</strong> <span id="infoLabelType"></span></p>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="bestBefore">Best Before Date (Bäst före)</label>
+                            <input type="date" id="bestBefore" required
+                                   value="{{ (''|suggest_best_before) }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="batch">Batch ID (Partimärkning)</label>
+                            <input type="text" id="batch" placeholder="Auto-filled from SKU">
+                            <small>Leave empty to use SKU as batch ID</small>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="quantity">Quantity (Labels to Print)</label>
+                        <input type="number" id="quantity" value="1" min="1" max="100" required>
+                    </div>
+
+                    <div class="button-group">
+                        <button type="button" id="previewBtn" class="btn btn-secondary">
+                            👁️ Preview ZPL
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            🖨️ Print Labels
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="zplPreview" class="card" style="display: none;">
+                <h3>ZPL Code Preview</h3>
+                <pre id="zplCode"></pre>
+                <button type="button" id="copyZplBtn" class="btn btn-secondary btn-sm">
+                    📋 Copy to Clipboard
+                </button>
+            </div>
+
+            <div id="resultMessage" class="message" style="display: none;"></div>
+        </main>
+
+        <footer>
+            <p>Cuppino Label Printer v1.0 | Swedish Food Compliance Labels</p>
+        </footer>
+    </div>
+
+    <script>
+        // Product data from Flask
+        const honeyProducts = {{ honey_products | tojson }};
+        const oliveProducts = {{ olive_products | tojson }};
+
+        let currentProduct = null;
+
+        // Category selection handler
+        document.getElementById('productCategory').addEventListener('change', function(e) {
+            const category = e.target.value;
+            const productSelect = document.getElementById('productSKU');
+            const productSelectGroup = document.getElementById('productSelectGroup');
+
+            productSelect.innerHTML = '<option value="">Select product...</option>';
+
+            if (category === 'honey') {
+                Object.keys(honeyProducts).forEach(sku => {
+                    const product = honeyProducts[sku];
+                    const option = document.createElement('option');
+                    option.value = sku;
+                    option.textContent = `${product.name_sv} - ${product.weight} (${sku})`;
+                    productSelect.appendChild(option);
+                });
+                productSelect.disabled = false;
+                productSelectGroup.style.display = 'block';
+            } else if (category === 'olive') {
+                Object.keys(oliveProducts).forEach(sku => {
+                    const product = oliveProducts[sku];
+                    const option = document.createElement('option');
+                    option.value = sku;
+                    option.textContent = `${product.name_sv} - ${product.weight} (${sku})`;
+                    productSelect.appendChild(option);
+                });
+                productSelect.disabled = false;
+                productSelectGroup.style.display = 'block';
+            } else {
+                productSelect.disabled = true;
+                productSelectGroup.style.display = 'none';
+            }
+
+            document.getElementById('productInfo').style.display = 'none';
+        });
+
+        // Product selection handler
+        document.getElementById('productSKU').addEventListener('change', function(e) {
+            const sku = e.target.value;
+            if (!sku) {
+                document.getElementById('productInfo').style.display = 'none';
+                return;
+            }
+
+            // Fetch product details
+            fetch(`/api/product/${sku}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        currentProduct = data.product;
+                        displayProductInfo(currentProduct, sku);
+                        document.getElementById('batch').value = sku;
+                    }
+                });
+        });
+
+        function displayProductInfo(product, sku) {
+            document.getElementById('infoName').textContent = product.name_sv;
+            document.getElementById('infoWeight').textContent = product.weight;
+            document.getElementById('infoLabelType').textContent =
+                product.label_type === 'full' ? 'Full Compliance Label' : 'QR Code Label';
+
+            const badge = document.getElementById('labelTypeBadge');
+            badge.textContent = product.label_type === 'full' ? 'Full Label' : 'QR Label';
+            badge.className = 'info-badge ' + (product.label_type === 'full' ? 'badge-full' : 'badge-qr');
+
+            document.getElementById('productInfo').style.display = 'block';
+        }
+
+        // Preview button
+        document.getElementById('previewBtn').addEventListener('click', function() {
+            generateZPL(false);
+        });
+
+        // Form submission (print)
+        document.getElementById('labelForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            generateZPL(true);
+        });
+
+        function generateZPL(shouldPrint) {
+            const sku = document.getElementById('productSKU').value;
+            const bestBefore = document.getElementById('bestBefore').value;
+            const batch = document.getElementById('batch').value || sku;
+            const quantity = document.getElementById('quantity').value;
+
+            if (!sku) {
+                showMessage('Please select a product', 'error');
+                return;
+            }
+
+            const payload = {
+                sku: sku,
+                best_before: bestBefore,
+                batch: batch,
+                quantity: quantity
+            };
+
+            fetch('/api/generate-zpl', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    document.getElementById('zplCode').textContent = data.zpl_code;
+                    document.getElementById('zplPreview').style.display = 'block';
+
+                    if (shouldPrint) {
+                        printLabel(data.zpl_code, quantity);
+                    } else {
+                        showMessage('ZPL generated successfully. Review below.', 'success');
+                    }
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            })
+            .catch(err => {
+                showMessage('Error generating ZPL: ' + err.message, 'error');
+            });
+        }
+
+        function printLabel(zplCode, quantity) {
+            fetch('/api/print', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ zpl_code: zplCode, quantity: quantity })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showMessage('✅ ' + data.message, 'success');
+                    if (data.filename) {
+                        showMessage(`📁 ZPL saved to: ${data.filename}`, 'info');
+                    }
+                } else {
+                    showMessage('❌ ' + data.message, 'error');
+                }
+            })
+            .catch(err => {
+                showMessage('❌ Print error: ' + err.message, 'error');
+            });
+        }
+
+        // Copy ZPL to clipboard
+        document.getElementById('copyZplBtn').addEventListener('click', function() {
+            const zplCode = document.getElementById('zplCode').textContent;
+            navigator.clipboard.writeText(zplCode).then(() => {
+                showMessage('📋 ZPL copied to clipboard', 'success');
+            });
+        });
+
+        function showMessage(text, type) {
+            const msgDiv = document.getElementById('resultMessage');
+            msgDiv.textContent = text;
+            msgDiv.className = 'message message-' + type;
+            msgDiv.style.display = 'block';
+
+            setTimeout(() => {
+                msgDiv.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

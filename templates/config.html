@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Printer Configuration - Cuppino Label Printer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚙️ Printer Configuration</h1>
+            <p>Configure Zebra GK420d Connection</p>
+            <a href="/" class="config-link">← Back to Label Printer</a>
+        </header>
+
+        <main>
+            <div class="card">
+                <h2>Connection Settings</h2>
+
+                <form id="configForm">
+                    <div class="form-group">
+                        <label for="connectionType">Connection Type</label>
+                        <select id="connectionType" required>
+                            <option value="file" {{ 'selected' if config.type == 'file' }}>
+                                File Export (Save ZPL to file)
+                            </option>
+                            <option value="network" {{ 'selected' if config.type == 'network' }}>
+                                Network (Ethernet/WiFi)
+                            </option>
+                            <option value="usb" {{ 'selected' if config.type == 'usb' }}>
+                                USB Direct Print
+                            </option>
+                        </select>
+                    </div>
+
+                    <div id="networkSettings" class="settings-group" style="display: none;">
+                        <h3>Network Settings</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="printerIP">Printer IP Address</label>
+                                <input type="text" id="printerIP" placeholder="192.168.1.100"
+                                       value="{{ config.ip or '' }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="printerPort">Port</label>
+                                <input type="number" id="printerPort" value="{{ config.port }}" min="1" max="65535">
+                            </div>
+                        </div>
+                        <p class="help-text">
+                            ℹ️ Make sure your Zebra GK420d has a network adapter and is connected to your network.
+                            The default port for Zebra printers is 9100.
+                        </p>
+                    </div>
+
+                    <div id="usbSettings" class="settings-group" style="display: none;">
+                        <h3>USB Settings</h3>
+                        <div class="form-group">
+                            <label for="printerName">System Printer Name</label>
+                            <input type="text" id="printerName" placeholder="Zebra_GK420d"
+                                   value="{{ config.printer_name }}">
+                        </div>
+                        <p class="help-text">
+                            ℹ️ Enter the printer name as shown in your system's printer settings.
+                            On macOS: System Settings → Printers & Scanners<br>
+                            On Windows: Control Panel → Devices and Printers
+                        </p>
+                    </div>
+
+                    <div id="fileSettings" class="settings-group" style="display: none;">
+                        <h3>File Export Settings</h3>
+                        <p class="help-text">
+                            ℹ️ In file export mode, ZPL code will be saved to a .zpl file.
+                            You can then manually send this file to the printer or use it for testing.
+                        </p>
+                        <div class="alert alert-info">
+                            <strong>How to print ZPL files manually:</strong>
+                            <ul>
+                                <li><strong>macOS/Linux:</strong> <code>cat label.zpl | nc [printer_ip] 9100</code></li>
+                                <li><strong>Windows:</strong> <code>type label.zpl > \\localhost\Zebra_GK420d</code></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <button type="button" id="testConnectionBtn" class="btn btn-secondary">
+                            🔌 Test Connection
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            💾 Save Configuration
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="configMessage" class="message" style="display: none;"></div>
+
+            <div class="card">
+                <h3>Current Configuration</h3>
+                <div class="config-display">
+                    <p><strong>Connection Type:</strong> <span id="displayType">{{ config.type }}</span></p>
+                    <p id="displayIP" style="display: none;">
+                        <strong>IP Address:</strong> <span>{{ config.ip }}</span>:<span>{{ config.port }}</span>
+                    </p>
+                    <p id="displayPrinterName" style="display: none;">
+                        <strong>Printer Name:</strong> <span>{{ config.printer_name }}</span>
+                    </p>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Cuppino Label Printer v1.0 | Swedish Food Compliance Labels</p>
+        </footer>
+    </div>
+
+    <script>
+        const connectionType = document.getElementById('connectionType');
+
+        // Show/hide settings based on connection type
+        function updateSettingsDisplay() {
+            const type = connectionType.value;
+
+            document.getElementById('networkSettings').style.display = type === 'network' ? 'block' : 'none';
+            document.getElementById('usbSettings').style.display = type === 'usb' ? 'block' : 'none';
+            document.getElementById('fileSettings').style.display = type === 'file' ? 'block' : 'none';
+
+            // Update current config display
+            document.getElementById('displayType').textContent = type;
+            document.getElementById('displayIP').style.display = type === 'network' ? 'block' : 'none';
+            document.getElementById('displayPrinterName').style.display = type === 'usb' ? 'block' : 'none';
+        }
+
+        connectionType.addEventListener('change', updateSettingsDisplay);
+        updateSettingsDisplay();
+
+        // Save configuration
+        document.getElementById('configForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const config = {
+                type: connectionType.value,
+                ip: document.getElementById('printerIP').value,
+                port: document.getElementById('printerPort').value,
+                printer_name: document.getElementById('printerName').value
+            };
+
+            fetch('/api/config/printer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showMessage('✅ Configuration saved successfully', 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showMessage('❌ ' + data.message, 'error');
+                }
+            })
+            .catch(err => {
+                showMessage('❌ Error saving configuration: ' + err.message, 'error');
+            });
+        });
+
+        // Test connection
+        document.getElementById('testConnectionBtn').addEventListener('click', function() {
+            showMessage('🔄 Testing connection...', 'info');
+
+            fetch('/api/test-connection', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showMessage('✅ ' + data.message, 'success');
+                } else if (data.status === 'info') {
+                    showMessage('ℹ️ ' + data.message, 'info');
+                } else {
+                    showMessage('❌ ' + data.message, 'error');
+                }
+            })
+            .catch(err => {
+                showMessage('❌ Connection test failed: ' + err.message, 'error');
+            });
+        });
+
+        function showMessage(text, type) {
+            const msgDiv = document.getElementById('configMessage');
+            msgDiv.textContent = text;
+            msgDiv.className = 'message message-' + type;
+            msgDiv.style.display = 'block';
+
+            if (type === 'success') {
+                setTimeout(() => {
+                    msgDiv.style.display = 'none';
+                }, 3000);
+            }
+        }
+    </script>
+</body>
+</html>
