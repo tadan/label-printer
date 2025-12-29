@@ -1,0 +1,77 @@
+# Product Database Template
+# Copy this file to products.yaml and add your products
+# This is a template showing the required structure for product labels
+
+products:
+    # ===== HONEY PRODUCTS EXAMPLE =====
+    # Product SKU format: PRODUCER-TYPE-SIZE
+
+    AB-ACACIA-250:
+        name_sv: 'Akaciahonung'                    # Swedish product name
+        name_it: 'Miele di Acacia'                 # Italian product name
+        weight: '250g'                              # Net weight
+        label_type: 'qr'                           # Label type (qr or full)
+        batch: 'AB-ACACIA-5701'                    # Batch/lot number
+        ingredients_sv: '100% Akaciahonung'        # Swedish ingredients
+        allergens_sv: 'Inga kända allergener'      # Swedish allergens
+        nutrition:                                  # Nutrition per 100g
+            energy_kj: '1340'
+            energy_kcal: '320'
+            fat: '0g'
+            carbs: '82g'
+            carbs_sugars: '82g'
+            protein: '0,2g'
+            salt: '0,01g'
+        storage_sv: 'Förvaras svalt och torrt, skyddad från ljus'
+        storage_it: 'Conservare in luogo fresco e asciutto al riparo da luce e fonti di calore'
+        disposal_sv: 'Återvinning: aluminiumlock, ofärgat glas'
+        disposal_it: 'Raccolta differenziata: tappo alluminio, vetro trasparente non colorato'
+        best_before: '30/06/2028'                  # Best before date (DD/MM/YYYY)
+        origin: 'Italien (Abruzzo, Guardiagrele)' # Country/region of origin
+        producer: 'Apicoltura Bianco - Italien'    # Producer name
+        importer: 'GGMR AB (Cuppino) - info@cuppino.se'
+        qr_url: 'https://cuppino.it/products/italian-acacia-honey?variant=52650721935687'
+
+    # ===== OLIVE SPREAD EXAMPLE =====
+
+    NAT-907-BLACKOLIVE:
+        name_sv: 'Svart Olivkräm'
+        name_it: 'Paté di Olive Nere'
+        weight: '190g'
+        label_type: 'qr'
+        ingredients_sv: 'Svarta oliver, extra jungfruolivolja, salt'
+        ingredients_it: 'Olive nere, olio extra vergine di oliva, sale'
+        allergens_sv: 'Inga kända allergener'
+        nutrition:
+            energy_kj: '1530'
+            energy_kcal: '366'
+            fat: '29,8 g'
+            fat_saturated: '4,6 g'
+            carbs: '22,3 g'
+            carbs_sugars: '<0,5 g'
+            protein: '2,1 g'
+            salt: '2,8 g'
+        storage_sv: 'Förvaras svalt och torrt, skyddad från ljus och värmekällor'
+        storage_it: 'Conservare in luogo fresco e asciutto al riparo da luce e fonti di calore'
+        disposal_sv: 'Återvinning: aluminiumlock, ofärgat glas'
+        disposal_it: 'Raccolta differenziata: tappo alluminio, vetro trasparente non colorato'
+        best_before: '23/10/2027'
+        origin: 'Italien (Abruzzo)'
+        producer: 'Natural s.r.l. - Italien'
+        importer: 'GGMR AB (Cuppino)'
+        qr_url: 'https://cuppino.it/italian-olive-spread-190g-pate-di-olive'
+
+# Common settings used across all labels
+common:
+    importer_full: 'GGMR AB (Cuppino), Irisgatan 14, 21565 Malmö - info@cuppino.se'
+    label_note_qr: 'Full produktinfo: Skanna QR-koden'
+    best_before_text: 'Bäst före:'
+    batch_text: 'Partimärkning:'
+    net_quantity_text: 'Nettokvantitet:'
+    ingredients_text: 'Ingredienser:'
+    allergens_text: 'Allergener:'
+    nutrition_text: 'Näringsdeklaration per 100g:'
+    storage_text: 'Förvaring:'
+    origin_text: 'Ursprung:'
+    producer_text: 'Producent:'
+    importer_text: 'Importör:'
