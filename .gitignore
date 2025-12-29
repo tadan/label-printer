@@ -29,7 +29,11 @@ instance/
 
 # Generated label files
 *.zpl
+!*-sample.zpl
 label_*.zpl
+test_*.zpl
+test_*.sh
+preview_*.png
 
 # IDE
 .vscode/
@@ -45,3 +49,10 @@ Thumbs.db
 # Config overrides (if you create local config files)
 config.local.yaml
 printer.local.yaml
+
+# Shipping-Labels and products
+shipping_labels/
+products.yaml
+
+# Claude Code
+.claude/
